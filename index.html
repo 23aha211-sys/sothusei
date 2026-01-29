@@ -1,0 +1,1274 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+    <link rel="stylesheet" href="./css/style.css">
+</head>
+<body>
+
+    <div class="panel-container">
+        <div class="counter-box">
+            <span class="label">CREDIT</span>
+            <span id="credit-num" class="seg-display">50</span>
+        </div>
+        <div class="counter-box">
+            <span class="label">PAYOUT</span>
+            <span id="payout-num" class="seg-display">0</span>
+        </div>
+        <div class="state-box" style="text-align:center; margin-top:5px;">
+            <span id="state-display" style="color: #fff; font-weight: bold; font-size: 20px;">NORMAL</span>
+            <br>
+            <span id="sub-info" style="color: #aaa; font-size: 14px;">--</span>
+        </div>
+    </div>
+    
+    <div class="reel-container">
+        <div id="warning-overlay" style="display: none;">
+            ⚠ 左押し推奨 ⚠
+        </div>
+    <div class="reel" id="reel1">
+        <img src="./img/blue_7.png" class="symbol">
+        <img src="./img/red_7.png" class="symbol">
+        <img src="./img/cherry.png" class="symbol">
+    </div>
+    <div class="reel" id="reel2">
+        <img src="./img/cherry.png" class="symbol">
+        <img src="./img/red_7.png" class="symbol">
+        <img src="./img/bell.png" class="symbol">
+    </div>
+    <div class="reel" id="reel3">
+        <img src="./img/bell.png" class="symbol">
+        <img src="./img/red_7.png" class="symbol">
+        <img src="./img/replay.png" class="symbol">
+    </div>
+    </div>
+    <div class="navi-container" style="text-align:center; height: 30px; margin-bottom: 5px;">
+        <span id="navi-0" class="navi-number" style="display:none;">1</span>
+        <span id="navi-1" class="navi-number" style="display:none;">2</span>
+        <span id="navi-2" class="navi-number" style="display:none;">3</span>
+    </div>
+    <button onclick="startReels()">START</button>
+    <button onclick="stopReel(0,tgtIndex)">左</button>
+    <button onclick="stopReel(1,tgtIndex)">中</button>
+    <button onclick="stopReel(2,tgtIndex)">右</button>
+
+
+
+    <script>
+    // 左・中・右リールの図柄配列（資料のリール配置を反映）
+    const leftReelSymbols = [//左
+        './img/replay.png','./img/watermelon.png','./img/bell.png','./img/blue_7.png',
+        './img/strawberry.png','./img/replay.png','./img/bell.png','./img/watermelon.png',
+        './img/cherry.png','./img/red_7.png','./img/replay.png','./img/watermelon.png',
+        './img/bell.png','./img/blue_7.png','./img/strawberry.png','./img/replay.png',
+        './img/bell.png','./img/watermelon.png','./img/cherry.png','./img/red_7.png',
+        './img/blue_7.png'
+    ];
+
+    const centerReelSymbols = [//中
+        './img/watermelon.png','./img/replay.png','./img/bell.png','./img/watermelon.png',
+        './img/strawberry.png','./img/cherry.png','./img/watermelon.png',
+        './img/replay.png','./img/bell.png','./img/blue_7.png','./img/strawberry.png',
+        './img/red_7.png','./img/bell.png','./img/cherry.png','./img/strawberry.png',
+        './img/watermelon.png','./img/replay.png','./img/bell.png','./img/red_7.png',
+        './img/cherry.png','./img/strawberry.png',
+    ];
+
+    const rightReelSymbols = [//右
+        './img/replay.png','./img/cherry.png','./img/bell.png','./img/watermelon.png',
+        './img/bell.png','./img/replay.png','./img/cherry.png','./img/blue_7.png',
+        './img/bell.png','./img/watermelon.png','./img/bell.png','./img/replay.png',
+        './img/strawberry.png','./img/bell.png','./img/watermelon.png','./img/bell.png',
+        './img/replay.png','./img/red_7.png','./img/bell.png','./img/watermelon.png',
+        './img/bell.png'
+    ];
+
+// ■ ゲーム状態の定義（追加版）
+const GAME_STATE = {
+    NORMAL: "NORMAL",
+    CZ: "CZ",
+    BONUS_REG_WAIT: "REG_WAIT",
+    LAST_CHALLENGE: "LAST_CHALLENGE",
+    BONUS_BIG: "BIG",          // 初回BIG（AT確定）
+    AT: "AT_RUSH",             // 通常AT（すとぷりRUSH）
+    AT_HYPER: "AT_HYPER",      // 上位AT（すとぷりHYPER）
+    JUDGE_PREP: "JUDGE_PREP",  // 継続ジャッジ準備中（1枚役待ち）
+    JUDGE_ACT: "JUDGE_ACT",     // 継続ジャッジ中（5G）
+    PULL_BACK: "PULL_BACK"      //引き戻し区間
+};
+
+let isAT = false;  //上位AT中かどうか
+
+let pullBackGames = 0;   // 引き戻し残りG数
+let isUpperAT = false;   // 上位ATフラグ
+const PULLBACK_WIN_RATE = 100 / 32.0; // 3.125% (1/32.0)
+
+
+//サウンドファイル集合所
+const cz_enter = new Audio('./sounds/cz_enter.mp3');
+const strstrawberry = new Audio('./sounds/veryHot.mp3');
+const freeze = new Audio('./sounds/freeeeez.mp3');
+const freezeBig = new Audio('./sounds/freezBig.mp3');
+const dropcoin = new Audio('./sounds/payout.mp3');
+const bell_order = new Audio('./sounds/orderbell.mp3');
+//ここまで
+
+// ■ 追加変数
+let atGames = 0;       // ATの残りゲーム数
+let judgePrepCount = 0; // 準備中の1枚役成立回数
+let judgeGames = 0;     // ジャッジの消化ゲーム数
+let hasAtStock = false; // 継続ストックの有無
+
+let spiningLReel = false;
+let spiningCReel = false;
+let spiningRReel = false;
+
+// ■ デバッグ用変数（nullなら通常抽選、何か入っていれば強制当選）
+let debugForcedRole = null;
+
+const reelLength = 21;
+const rotationTime = 750; // 1回転0.75秒
+const frameInterval = rotationTime / reelLength; // ≈ 35.7msで1コマ進む
+//rotationTime / reelLength
+
+let currentIndex = [17,16,15];
+let reelTimers = [];
+
+// ■ 現在の設定 (1, 2, 3, 4, 5, 6, "L")
+let currentSetting = Math.floor(Math.random() * 3) + 2;; 
+
+// ■ 設定別・当選確率テーブル (2026/01/16仕様書準拠)
+// ※確率は「当選確率(%)」
+const SETTING_TABLE = {
+    1: {
+        CZ: { "弱チェ": 10, "スイカ弱": 5, "スイカ強": 20, "チャンス": 25, "強チェ": 40, "強イチゴ": 60, "中チェ": 100, "一枚役": 0.1 },
+        DIRECT_BIG: { "リプレイ": 0.01, "ベル": 0.01, "弱チェ": 0.2, "チャンス": 1.0, "強チェ": 5.0, "強イチゴ": 10.0, "中チェ": 100, "一枚役": 0.02 }
+    },
+    2: {
+        CZ: { "弱チェ": 12, "スイカ弱": 6, "スイカ強": 22, "チャンス": 28, "強チェ": 45, "強イチゴ": 65, "中チェ": 100, "一枚役": 0.2 },
+        DIRECT_BIG: { "リプレイ": 0.02, "ベル": 0.02, "弱チェ": 0.4, "チャンス": 1.5, "強チェ": 6.0, "強イチゴ": 12.0, "中チェ": 100, "一枚役": 0.04 }
+    },
+    3: {
+        CZ: { "弱チェ": 14, "スイカ弱": 7, "スイカ強": 24, "チャンス": 30, "強チェ": 50, "強イチゴ": 70, "中チェ": 100, "一枚役": 0.3 },
+        DIRECT_BIG: { "リプレイ": 0.03, "ベル": 0.03, "弱チェ": 0.6, "チャンス": 2.0, "強チェ": 7.0, "強イチゴ": 14.0, "中チェ": 100, "一枚役": 0.06 }
+    },
+    4: {
+        CZ: { "弱チェ": 16, "スイカ弱": 8, "スイカ強": 26, "チャンス": 35, "強チェ": 55, "強イチゴ": 75, "中チェ": 100, "一枚役": 0.4 },
+        DIRECT_BIG: { "リプレイ": 0.05, "ベル": 0.05, "弱チェ": 1.0, "チャンス": 3.0, "強チェ": 10.0, "強イチゴ": 18.0, "中チェ": 100, "一枚役": 0.1 }
+    },
+    5: {
+        CZ: { "弱チェ": 18, "スイカ弱": 10, "スイカ強": 30, "チャンス": 40, "強チェ": 60, "強イチゴ": 80, "中チェ": 100, "一枚役": 0.5 },
+        DIRECT_BIG: { "リプレイ": 0.08, "ベル": 0.08, "弱チェ": 2.0, "チャンス": 5.0, "強チェ": 12.0, "強イチゴ": 22.0, "中チェ": 100, "一枚役": 0.2 }
+    },
+    6: {
+        CZ: { "弱チェ": 25, "スイカ弱": 15, "スイカ強": 40, "チャンス": 50, "強チェ": 70, "強イチゴ": 90, "中チェ": 100, "一枚役": 1.0 },
+        DIRECT_BIG: { "リプレイ": 0.1, "ベル": 0.1, "弱チェ": 3.0, "チャンス": 8.0, "強チェ": 15.0, "強イチゴ": 30.0, "中チェ": 100, "一枚役": 0.5 }
+    },
+    "L": {
+        CZ: { "弱チェ": 0.1, "スイカ弱": 0.1, "スイカ強": 1.0, "チャンス": 1.0, "強チェ": 5.0, "強イチゴ": 10.0, "中チェ": 50, "一枚役": 0 },
+        DIRECT_BIG: { "リプレイ": 0, "ベル": 0, "弱チェ": 0, "チャンス": 0, "強チェ": 0, "強イチゴ": 0, "中チェ": 0, "一枚役": 0 }
+    }
+};
+
+
+
+function waitSeconds(seconds) {
+    return new Promise(resolve => setTimeout(resolve, seconds * 1000));
+}
+
+const stopPatterns = {//指定値+2が中央に来る図柄
+    "一枚役": { left: "ANY", center: "ANY", right: "ANY" },
+    "リプレイ": { left: [4,9,14,20], center: [6,15,21], right: [4,10,15,20] },
+    "ベル" : {left: [5,11,15,1], center: [7,11,16,1], right: [3,7,9,12,14,17,19,1]},
+    "弱チェ": {left: [6,8,16,18], center: "ANY", right: "ANY"},
+    "チャンス": {left: [1,5,11,15], center: [2,5,14,20], right: [6,16]},
+    "スイカ弱": {left:[5,9,15,20], center:[2,5,14,20], right:[3,9,14,19]},
+    "スイカ強": {left:[6,10,16,21], center:[2,5,14,20], right:[2,6,8,13,16,18]},
+    "強チェ": {left:[6,16], center:[3,11,17], right:[4,20]},
+    "強イチゴ": {left:[3,13], center:[3,9,13,19], right:[11]},
+    "押し順ベル": { left: [5,11,15,1], center: [7,11,16,1], right: [3,7,9,12,14,17,19,1] },
+    "中チェ": {left:[7,17], center:"ANY", right:"ANY"},
+    "G数増加-弱": {left:[2,12,19], center:[8], right:[6]},//青7揃い
+    "G数増加-強": {left:[8,18], center:[10,17], right:[16]}//赤7揃い
+};
+
+const orderPatterns = [
+    [1, 0, 2], [1, 2, 0], // 中第一
+    [2, 0, 1], [2, 1, 0]  // 右第一
+];
+
+const reels = [
+    leftReelSymbols,
+    centerReelSymbols,
+    rightReelSymbols
+];
+
+// ■ 当選した役を一時保存する変数
+let currentHitRole = null;
+
+// ■ 払い出し枚数の設定 (PDF参照)
+// キー名は stopPatterns や lottery 配列の文字列と一致させる
+const payoutMap = {
+    "一枚役": 1,         // 
+    "ベル": 8,           // 
+    "押し順ベル": 15,     // 
+    "中チェ": 15,        // 
+    "中段チェリー": 15,
+    
+    // 以下は全てリプレイ扱い（再遊技）
+    "リプレイ": "REPLAY", // 
+    "弱チェ": "REPLAY",   // 
+    "強チェ": "REPLAY",
+    "スイカ弱": "REPLAY", // 
+    "スイカ強": "REPLAY",
+    "チャンス": "REPLAY",
+    "強イチゴ": "REPLAY",
+    "G数増加": "REPLAY"
+};
+
+// ■ 設定1想定の当選期待度（%）
+// ※本来はもっと細かいが、体感で気持ちいいバランスにしてある
+/*const LOTTERY_RATES = {
+    // CZ当選率 (%)
+    CZ: {
+        "弱チェ": 5,
+        "スイカ弱": 10,
+        "スイカ強": 20,
+        "チャンス": 25,
+        "強チェ": 40,
+        "強イチゴ": 80, // 激熱
+        "中チェ": 100,     // 中チェは直撃確定の他に、CZ突破確定にもしたい
+        "一枚役":1
+    },
+    // BIG直撃(フリーズ)当選率 (%)
+    DIRECT_BIG: {
+        "リプレイ": 0.5, // リプ連などの概念がない場合、薄く抽選
+        "ベル": 0.1,
+        "弱チェ": 1,
+        "チャンス": 5,
+        "強チェ": 10,
+        "強イチゴ": 25,
+        "中チェ": 100,    // 確定！
+        "一枚役":0.1
+    }
+};*/
+
+// ■ 設定：CZ中のボーナス当選確率 (%)
+// ※PDFのスペックに合わせて調整してくれ
+const CZ_CONFIG = {
+    GAMES: 15, // CZの継続ゲーム数
+    
+    // 小役ごとの解除期待度
+    HIT_RATES: {
+        "リプレイ": 5,    // リプでも5%
+        "ベル": 10,       // ベル連が熱いかも
+        "押し順ベル": 10,
+        "弱チェ": 30,
+        "スイカ弱": 30,
+        "スイカ強": 60,   // 激熱
+        "チャンス": 50,
+        "強チェ": 100,    // 確定級
+        "強イチゴ": 100,
+        "中チェ": 100,
+        "一枚役": 1       // 基本はノーチャンスとはいえ、それはそれでかわいそう
+    }
+};
+
+let czRemainingGames = 0; // CZの残りG数
+
+let rondom;
+
+let isBusy = false; // 払い出しや演出中は true になる
+
+let Normal_lottery = [];
+let AT_lottery = [];
+
+// ■ 変則打ちペナルティ用のフラグ
+let isPenalty = false;
+
+setInterval(() => {
+    rondom = Math.floor( Math.random() * 65536 );
+}, 10);
+
+let tgtIndex = [0,0,0];
+
+// --- グローバル変数エリア ---
+let isStopping = false; // 「今停止処理中か？」を判定するフラグ
+
+// 変数定義のあたりに追加
+let credits = 777;  // 初期持ちメダル
+let payout = 0;    // 払い出し枚数
+
+function updateStateDisplay() {
+    const stateEl = document.getElementById('state-display');
+    const subEl = document.getElementById('sub-info');
+    
+    stateEl.textContent = currentState;
+
+    if (currentState === GAME_STATE.AT) {
+        stateEl.style.color = "gold"; 
+        // ★ここで atGames を表示しているか？
+        subEl.textContent = `残り ${atGames} G`; 
+    }
+
+    else if (currentState === GAME_STATE.CZ) {
+        stateEl.style.color = "#00ff00"; // ライムグリーン
+        subEl.textContent = `残り ${czRemainingGames} G`;
+    }
+    
+    // --- 既存の表示処理 ---
+    else if (currentState === GAME_STATE.BONUS_REG_WAIT) {
+        stateEl.style.color = "yellow";
+        subEl.textContent = `ベル回数: ${regBellCount}/7`;
+    } else if (currentState === GAME_STATE.LAST_CHALLENGE) {
+        stateEl.style.color = "red";
+        subEl.textContent = `LAST CHALLENGE: ${lastChallengeG}/5G`;
+    } 
+    // --- ★追加：AT中の表示 ---
+    else if (currentState === GAME_STATE.AT || currentState === GAME_STATE.AT_HYPER) {
+        if (currentState === GAME_STATE.AT_HYPER) {
+            stateEl.style.color = "#FFD700"; // ゴールド
+            // CSSで光彩を放つ
+            stateEl.style.textShadow = "0 0 10px #FFD700, 0 0 20px #FF4500"; 
+            stateEl.textContent = "HYPER ALICE RUSH"; // 名前はお好みで
+        } else {
+            stateEl.style.color = "magenta";
+            stateEl.style.textShadow = "none";
+            stateEl.textContent = "すとぷりRUSH";
+        }
+        subEl.textContent = `残りG数: ${atGames}G`;
+    }
+    else if (currentState === GAME_STATE.JUDGE_PREP) {
+        stateEl.style.color = "cyan";
+        subEl.textContent = `準備中... 1枚役: ${judgePrepCount}/2`;
+    }
+    else if (currentState === GAME_STATE.JUDGE_ACT) {
+        stateEl.style.color = "orange";
+        subEl.textContent = `継続ジャッジ: ${judgeGames}/5G`;
+    }
+    else {
+        stateEl.style.color = "white";
+        subEl.textContent = "--";
+    }
+}
+
+// ■ 上位AT開始処理
+function startHyperAT() {
+    alert("上位AT「すとぷりHYPER」突入！");
+    currentState = GAME_STATE.AT_HYPER;
+    atGames = 50; // 仕様：50Gスタート
+    hyperStock = 0; // ストックリセット
+    
+    // --- 80%ループ抽選 ---
+    // 継続率80%で「何個ストックを持てるか」を一気に抽選する
+    // ※初回分は保証されているとして、追加分を抽選するか、
+    //   あるいは初回セットもこのループに含めるかは仕様次第だが、
+    //   今回は「突入＝1セット目」＋「裏でストック抽選」とするぜ。
+    
+    while(Math.random() < 0.8) {
+        hyperStock++;
+    }
+    
+    console.log(`上位AT突入！ 獲得ストック数: ${hyperStock}`);
+    alert(`上位AT「すとぷりHYPER」突入！\n(期待度約80%ループ)`);
+    
+    updateStateDisplay();
+}
+
+// ■ 通常AT開始処理（BIG後など）
+async function startNormalAT(initialG) {
+    currentState = GAME_STATE.AT;
+
+    atGames = initialG; // デフォルト20G
+
+    hasAtStock = false; // 通常はストックなしとする（抽選入れても良い）
+    updateStateDisplay();
+}
+
+// ■ CZ突入処理（初期化）
+async function enterCZ() {
+    cz_enter.currentTime = 0;
+    cz_enter.play();
+    await waitSeconds(3);
+    alert("チャンスゾーン突入！ 15G以内にボーナスを掴め！");
+    currentState = GAME_STATE.CZ;
+    czRemainingGames = CZ_CONFIG.GAMES;
+    
+    // 演出：背景を変えるとか、文字色を変えるとか
+    document.querySelector('.panel-container').style.borderColor = "#00ff00"; // 緑枠に変化
+    updateStateDisplay();
+}
+
+// ■ 状態移行チェック（AT・ジャッジ関連を追加）
+function checkStateTransition() {
+    // --- 1. 通常時の抽選 ---
+    // 1. 通常時の抽選
+    if (currentState === GAME_STATE.NORMAL) {
+        
+        // 設定テーブルの取得（なければ設定1）
+        const currentRates = SETTING_TABLE[currentSetting] || SETTING_TABLE[1];
+
+        // ■ 直撃BIG抽選（防弾仕様）
+        // "DIRECT_BIG" という箱があり、かつ "今の役" の確率が定義されているか？
+        let bigRate = 0;
+        if (currentRates.DIRECT_BIG && typeof currentRates.DIRECT_BIG[currentHitRole] !== 'undefined') {
+            bigRate = currentRates.DIRECT_BIG[currentHitRole];
+        }
+
+        if (Math.random() * 100 < bigRate) {
+            if (currentHitRole === "中チェ") performFreeze();
+            else startBonus(true);
+            return;
+        }
+
+        // ■ CZ抽選（防弾仕様）
+        // "CZ" という箱があり、かつ "今の役" の確率が定義されているか？
+        let czRate = 0;
+        if (currentRates.CZ && typeof currentRates.CZ[currentHitRole] !== 'undefined') {
+            czRate = currentRates.CZ[currentHitRole];
+        }
+
+        if (Math.random() * 100 < czRate) {
+            enterCZ();
+        }
+    }
+
+    // --- 2. REG待ち (処理なし) ---
+    // ※ベルカウントは checkPayout 側でやってるから、ここは空っぽでいい。
+    // 無理に書くと二重判定になるからな。
+
+    // --- 3. ★ここが重要：ラストチャレンジの進行処理 ---
+    else if (currentState === GAME_STATE.LAST_CHALLENGE) {
+        lastChallengeG++; // ゲーム数を進める
+        console.log(`ラストチャレンジ消化: ${lastChallengeG}/5`);
+
+        let isSuccess = false;
+
+        // ① 確率抽選 (1/10 = 10%)
+        if (Math.random() < 0.1) isSuccess = true;
+
+        // ② 小役書き換え (強レア役なら確定！)
+        // ※PDF仕様: 「5Gの間にレア役を引く or 大当たりを引いたらAT」
+        if (["強チェ", "チャンス", "スイカ強", "強イチゴ", "中チェ"].includes(currentHitRole)) {
+            isSuccess = true;
+            console.log("レア役でねじ込んだ！");
+        }
+
+        if (isSuccess) {
+            alert("ラストチャレンジ成功！！ すとぷりRUSH突入！");
+            // AT開始処理へ
+            startNormalAT(20); 
+            return;
+        }
+
+        // 失敗判定 (5G消化してダメだった場合)
+        if (lastChallengeG >= 5) {
+            alert("ラストチャレンジ失敗…… 通常へ");
+            currentState = GAME_STATE.NORMAL;
+            // 枠色とか変えてたら戻す処理もここに
+        }
+    }
+
+    // --- 4. CZ中 ---
+    else if (currentState === GAME_STATE.CZ) {
+        // ... (既存のCZ処理) ...
+        // さっき作ったやつがあればそのまま
+        czRemainingGames--;
+        let rate = CZ_CONFIG.HIT_RATES[currentHitRole] || 0;
+        if (Math.random() * 100 < rate) {
+            alert("CZ成功！");
+            document.querySelector('.panel-container').style.borderColor = "#555";
+            startBonus();
+            return;
+        }
+        if (czRemainingGames <= 0) {
+            alert("CZ失敗...");
+            currentState = GAME_STATE.NORMAL;
+            document.querySelector('.panel-container').style.borderColor = "#555";
+        }
+    }
+
+    // --- 5. AT中 (通常・上位共通) ---
+    if (currentState === GAME_STATE.AT || currentState === GAME_STATE.AT_HYPER) {
+        atGames--; // ゲーム数消化
+        
+        // --- 演出強化: 上位AT中は文字をピカピカさせたいならここ ---
+        // (updateStateDisplayでやってるからそのままでOK)
+
+        if (atGames <= 0) {
+            // ★追加ロジック: 上位ATでストックがある場合
+            if (currentState === GAME_STATE.AT_HYPER && hyperStock > 0) {
+                hyperStock--; // ストック消費
+                atGames = 20; // ゲーム数再セット
+                
+                // 演出: 終わったと見せかけて…？
+                alert("まだまだぁ！！\nHYPER LOOP発動！ (残りストックあり)");
+                console.log(`HYPER継続！ 残りストック: ${hyperStock}`);
+                updateStateDisplay();
+                return; // ここで処理を終えて、ジャッジへは行かせない
+            }
+
+            // ストックがない、または通常ATなら終了してジャッジへ
+            alert("AT終了……継続ジャッジへ");
+            isAT = false;
+            currentState = GAME_STATE.JUDGE_PREP;
+            judgePrepCount = 0;
+            
+            // 画面の装飾を戻す（もし変えていれば）
+            document.getElementById('state-display').style.textShadow = "none";
+        }
+    }
+
+    // --- 6. 継続ジャッジ準備中 ---
+    else if (currentState === GAME_STATE.JUDGE_PREP) {
+        // PDF仕様：1枚払い出し(弱イチゴ/一枚役)が2回出るまで待機
+        if (currentHitRole === "一枚役" || currentHitRole === "弱イチゴ") { // 名前は定義に合わせて
+            judgePrepCount++;
+        }
+        
+        if (judgePrepCount >= 2) {
+            alert("準備完了！継続ジャッジ開始(5G)！");
+            currentState = GAME_STATE.JUDGE_ACT;
+            judgeGames = 0;
+        }
+    }
+
+    // --- 7. 継続ジャッジ (5G) ---
+    else if (currentState === GAME_STATE.JUDGE_ACT) {
+        judgeGames++;
+        
+        let isSuccess = false;
+        let isHyper = false;
+
+        // ストックがあれば無条件成功
+        if (hasAtStock) {
+            isSuccess = true;
+            // 上位AT中なら継続確定＝上位ループ
+            if (currentState === GAME_STATE.AT_HYPER) isHyper = true; 
+            hasAtStock = false; // ストック消費
+            console.log("ストック放出！");
+            isAT = true;
+        } 
+        // 自力抽選 (レア役 or 1/6)
+        else {
+            if (Math.random() < (1/6)) isSuccess = true;
+            if (["強チェ", "チャンス", "スイカ強"].includes(currentHitRole)) isSuccess = true;
+        }
+
+        if (isSuccess) {
+            // PDF仕様：1/25で上位ATへ
+            if (Math.random() < (1/25)) {
+                isAT = true;
+                isUpperAT = true;
+                startHyperAT();
+            } else {
+                // 通常ATへ復帰（ゲーム数は振り分けだが今回は20G固定で）
+                alert("継続成功！RUSH復帰！");
+                isAT = true;
+                // もし元々上位ATだった場合はどうするか？
+                // 仕様の読み解きによるが、一般的に上位ループ漏れは通常ATに落ちるか終わるか。
+                // ここでは「成功＝現状維持以上」としておく。
+                if (currentState === GAME_STATE.AT_HYPER) startHyperAT(); // ループ
+                else startNormalAT(20);
+            }
+            return; // 処理終了
+        }
+
+        // 5G駆け抜け失敗
+        if (judgeGames >= 5) {
+            alert("ジャッジ失敗……通常へ");
+            if (isUpperAT) {
+                pullBackGames = 72; // 上位後は72G
+            } else {
+                pullBackGames = 66; // 通常後は66G
+            }
+            console.log("引き戻し区間突入：" + pullBackGames);
+            currentState = GAME_STATE.PULL_BACK;
+            isAT = false;
+            // 引き戻し区間(66G)などはここに実装するが、まずは通常へ戻す
+        }
+    }
+    else if (currentState === GAME_STATE.PULL_BACK) {
+        pullBackGames--;
+
+        // 1/32.0 の引き戻し抽選 
+        if (Math.random() * 100 < PULLBACK_WIN_RATE) {
+            console.log("🔥 引き戻し成功！ 🔥");
+            strstrawberry.currentTime = 0;
+            strstrawberry.play();
+            startBonus(true); // AT復帰
+            pullBackGames = 0;
+            return;
+        }
+
+        // 規定ゲーム数消化で通常へ
+        if (pullBackGames <= 0) {
+            console.log("引き戻し失敗。通常へ戻ります");
+            currentState = GAME_STATE.NORMAL;
+            isUpperAT = false;
+        }
+    }
+
+    updateStateDisplay();
+}
+
+// ■ フリーズ演出（中段チェリーなど）
+async function performFreeze() {
+    freeze.currentTime = 0;
+    freeze.play()
+    
+    // 画面を暗くするなどのCSS操作をしてもいい
+    document.body.style.backgroundColor = "black";
+    document.querySelector('.panel-container').style.opacity = "0.2";
+    
+    // 5秒後に復帰してBIG開始
+    setTimeout(() => {
+        document.body.style.backgroundColor = ""; // 元に戻す
+        document.querySelector('.panel-container').style.opacity = "1";
+        freezeBig.currentTime = 0;
+        freezeBig.play()
+        waitSeconds(6);
+        
+        alert("降臨！ BIG BONUS確定！");
+        waitSeconds(6);
+        isAT = true;
+        startBonus(true); // BIG確定
+    }, 5000);
+}
+
+// ■ ボーナス開始処理（引数でBIG確定を受け取れるように改修）
+function startBonus(isForcedBig = false) {
+    // isForcedBig が true ならBIG確定、そうでなければ振り分け
+    // PDF仕様では基本比率は BIG 40% : REG 60%
+    
+    let isBig = isForcedBig ? true : (Math.random() < 0.4);
+
+    if (currentSetting === "L") {
+        console.log("設定Lのため、BIGを強制的にREGへ変更");
+        isBig = false;
+    }
+    
+    if (isBig) {
+        isAT = true;
+        if (!isForcedBig) alert("BIG BONUS！ すとぷりRUSH突入！");
+        // BIG処理（ATへ）
+        startNormalAT(20); 
+    } else {
+        isAT = true;
+        alert("REG BONUS... ベルを7回集めろ！");
+        currentState = GAME_STATE.BONUS_REG_WAIT;
+        regBellCount = 0;
+    }
+    updateStateDisplay();
+}
+
+// ■追加：画面の数字を更新する関数
+function updatePanel() {
+    const creditEl = document.getElementById('credit-num');
+    const payoutEl = document.getElementById('payout-num');
+    
+    // 桁数を揃えたいなら .toString().padStart(2, '0') とか使うとカッコいい
+    creditEl.textContent = credits;
+    payoutEl.textContent = payout;
+}
+
+function picupRandInt() {
+    
+    // ■■■ デバッグ強制モード ■■■
+    if (debugForcedRole !== null) {
+        currentHitRole = debugForcedRole;
+        console.log(`★神の力発動！強制フラグ: ${currentHitRole}`);
+        
+        if(currentHitRole === "強イチゴ" || currentHitRole === "強チェ" || currentHitRole === "スイカ強"){
+            strstrawberry.currentTime = 0;
+            strstrawberry.play();
+        }
+        
+
+        // 押し順ベルの場合の処理
+        if (currentHitRole === "押し順ベル") {
+             // orderPatterns がちゃんとあるか確認
+             if (typeof orderPatterns === 'undefined') {
+                 console.error("【エラー】orderPatterns が定義されてないぞ！コードの一番上に書いたか確認しろ！");
+                 return;
+             }
+
+             const randIndex = Math.floor(Math.random() * orderPatterns.length);
+             correctOrder = orderPatterns[randIndex];
+             
+             // ナビを出す条件
+             if (["AT","AT_HYPER","BIG","REG_WAIT"].includes(currentState) || currentState.includes("BONUS")) {
+                 // 安全策：correctOrderがあれば表示
+                 if (correctOrder) {
+                     showNavi(correctOrder);
+                 }
+             }
+        }
+        
+        tgtIndex = decideStop(currentHitRole);
+        debugForcedRole = null; 
+        return; 
+    }
+
+
+    let piced = rondom;
+    if(!isAT){
+        currentHitRole = Normal_lottery[piced]; // ★保存
+        console.log(piced + "," + Normal_lottery[piced]);
+        tgtIndex = decideStop(Normal_lottery[piced]);
+    }else {
+        currentHitRole = AT_lottery[piced];     // ★保存
+        console.log(piced + "," + AT_lottery[piced]);
+        tgtIndex = decideStop(AT_lottery[piced]);
+        if (currentHitRole === "押し順ベル") {
+            // ランダムに正解パターンを選ぶ
+            bell_order.currentTime = 0;
+            bell_order.play();
+            const randIndex = Math.floor(Math.random() * orderPatterns.length);
+            correctOrder = orderPatterns[randIndex];
+            
+            console.log("正解の押し順:", correctOrder);
+
+            // ★AT中 または ボーナス中ならナビを出す（＝正解を教える）
+            if (currentState === GAME_STATE.AT || 
+                currentState === GAME_STATE.AT_HYPER || 
+                currentState === GAME_STATE.BONUS_BIG ||
+                currentState === GAME_STATE.BONUS_REG_WAIT ||
+                currentState === GAME_STATE.LAST_CHALLENGE)
+                 {
+                
+                showNavi(correctOrder);
+            }
+        }
+    }
+    const heavyRoles = ["強チェ", "強イチゴ", "スイカ強", "チャンス", "中チェ", "G数増加-強"];
+
+    if (heavyRoles.includes(currentHitRole)) {
+        // リール全体を包むコンテナを取得
+        const container = document.querySelector('.reel-container');
+        
+        // クラスを付与してアニメーション開始
+        container.classList.add('flash-mode');
+        
+        console.log("⚡ 強役演出発生！ ⚡");
+
+        // 0.5秒後にクラスを外す（これをしないと次は光らなくなる）
+        setTimeout(() => {
+            container.classList.remove('flash-mode');
+        }, 500);
+    }
+}
+
+// ■ ナビを表示する関数
+function showNavi(order) {
+    // ★追加：orderがちゃんとした配列かチェックする安全装置
+    if (!Array.isArray(order) || order.length !== 3) {
+        // 配列じゃないならナビを消して帰る
+        hideNavi(); 
+        return;
+    }
+
+    // order は [1, 2, 0] (中・右・左) のような配列
+    // index 0 は左リール、1は中リール、2は右リールに対応
+    
+    // 左リール(id=navi-0) には何番目に押すべきかを表示
+    document.getElementById('navi-0').textContent = order.indexOf(0) + 1;
+    document.getElementById('navi-0').style.display = 'inline-block';
+
+    document.getElementById('navi-1').textContent = order.indexOf(1) + 1;
+    document.getElementById('navi-1').style.display = 'inline-block';
+
+    document.getElementById('navi-2').textContent = order.indexOf(2) + 1;
+    document.getElementById('navi-2').style.display = 'inline-block';
+}
+
+const forbiddenKeys = ["リプレイ", "ベル", "弱チェ", "スイカ弱", "スイカ強", "強チェ", "強イチゴ", "中チェ"];
+
+async function checkPayout() {
+    if (isPenalty) {
+        // リール上に警告文を表示
+        const overlay = document.getElementById('warning-overlay');
+        overlay.style.display = 'block'; // 表示オン
+        
+        console.log("変則打ちのため抽選無効");
+        isBusy = false; 
+        return;
+        
+        // フラグだけ戻して、払い出し処理を行わずに終了（return）
+        isBusy = false; 
+        return; 
+    }
+    let pay = payoutMap[currentHitRole];
+    if (pay === undefined) pay = 0;
+
+    if (currentState === GAME_STATE.AT) {
+        
+        let addG = 0;
+
+        // stopPatternsのキー名と完全一致させること！
+        if (currentHitRole === "G数増加-弱") {
+            addG = 10; // 青7は10G
+        } 
+        else if (currentHitRole === "G数増加-強") {
+            addG = 20; // 赤7は20G
+        }
+
+        // 上乗せ実行
+        if (addG > 0) {
+            for(let i = 0; i < addG; i++) {
+                atGames++;
+                updateStateDisplay();
+                await waitSeconds(0.05);
+            }
+
+            // ログと演出
+            console.log(`${currentHitRole}！ +${addG}G`);
+            alert(`【上乗せ！】\n${currentHitRole} GET！\n+${addG}G (残り ${atGames}G)`);
+
+            // 演出：強なら赤、弱ならシアン(青)
+            let color = (currentHitRole === "G数増加-強") ? "red" : "cyan";
+            let panel = document.querySelector('.panel-container');
+            if(panel) {
+                panel.style.borderColor = color;
+                panel.style.boxShadow = `0 0 20px ${color}`;
+                setTimeout(() => {
+                    panel.style.borderColor = "#555";
+                    panel.style.boxShadow = "inset 0 0 10px #000";
+                }, 1000);
+            }
+            addG = 0;
+        }
+    }
+
+    // --- 押し順ベルの判定 ---
+    if (currentHitRole === "押し順ベル") {
+        if (JSON.stringify(playerOrder) === JSON.stringify(correctOrder)) {
+            console.log("押し順正解！");
+            pay = 15; // 正解
+            // ここで「GOOD!」とか出すと気持ちいい
+        } else {
+            console.log("押し順不正解...");
+            pay = 1; // 失敗
+        }
+    }
+
+    // --- ★ここが重要：REG中のベルカウント処理 ---
+    // 状態が「REG待ち」で、かつ「ベルの払い出し(8枚以上)」があったらカウント
+    if (currentState === GAME_STATE.BONUS_REG_WAIT) {
+        // 「ベル」または「押し順ベル(正解)」なら pay は 8 になっているはず
+        if (pay >= 8) {
+            regBellCount++;
+            console.log(`ベル入賞！ 現在: ${regBellCount}/7`);
+            
+            // 規定回数到達チェック
+            if (regBellCount >= 7) {
+                alert("ベル規定回数到達！ラストチャレンジ突入！");
+                currentState = GAME_STATE.LAST_CHALLENGE;
+                lastChallengeG = 0;
+            }
+        }
+    }
+
+    // --- 払い出し実行 ---
+    if (pay === "REPLAY") {
+        for(let i = 0; i < 3; i++) {
+            credits += 1;
+            updatePanel(); 
+            await waitSeconds(0.05);
+        }
+        payout = 0; 
+        console.log("REPLAY");
+    } else if(pay == 1 || pay === "一枚役"){
+        credits += 1;
+        payout += 1;
+    }
+    else {
+        dropcoin.currentTime = 0;
+        dropcoin.play();
+        for(let i = 0; i < pay ; i++) {
+            credits += 1;
+            payout += 1;
+            updatePanel(); 
+            await waitSeconds(0.05);
+        }
+        console.log(pay + "枚払い出し");
+    }
+
+    // 上限処理
+    //if (credits > 99) credits = 99;
+
+    updatePanel(); 
+    checkStateTransition(); // 状態移行チェックへ（カウント処理は削除済み）
+
+    // ウェイト解除
+    setTimeout(() => {
+        isBusy = false;
+    }, 400);
+}
+    
+    /*let pay = payoutMap[currentHitRole];
+    
+    // 定義されていない役（ハズレ等）は0枚
+    if (pay === undefined) pay = 0;
+
+    if (currentHitRole === "押し順ベル") {
+        // 配列の中身を比較（JSON.stringifyはお手軽比較テクニック）
+        if (JSON.stringify(playerOrder) === JSON.stringify(correctOrder)) {
+            console.log("押し順正解！ベルGET！");
+            pay = 8; // 正解時の枚数（PDFなどの仕様に合わせる）
+            
+            // 演出：ナビを消す、または「GOOD!」とか出す
+            
+        } else {
+            console.log("押し順不正解……こぼし");
+            pay = 1; // こぼし時の枚数（通常は1枚か0枚）
+            
+            // 重要なポイント：
+            // 不正解の場合、リール制御側で「ベルが揃わない位置」に止める必要があるが
+            // 簡易実装としては「揃ってるように見えるけど払い出しは1枚」にするか、
+            // decideStop関数側で最初から「こぼし目」を用意するかがリアル。
+            // 今回はとりあえず「払い出し枚数を減らす」だけで再現とする。
+        }
+    }
+
+    if (pay === "REPLAY") {
+        // リプレイの場合：3枚投入が返ってくるイメージ（±0）
+        // 実際の挙動としてはCREDITに3加算して、次ゲームのBET分を補填する
+        credits += 3;
+        // リプレイランプがあれば点灯させるが、今回はPAYOUT表示は0にしておく
+        payout = 0; 
+        console.log("REPLAY! 再遊技");
+    } else {
+        // 通常の払い出し
+        //credits += pay;
+        //payout = pay;
+
+        for(let i = 0; i < pay ; i++) {
+            credits += 1;
+            payout += 1;
+            updatePanel();
+            await waitSeconds(0.05);
+        }
+        console.log(pay + "枚払い出し");
+    }
+
+    // 状態移行チェック
+    checkStateTransition();
+
+    // 上限処理（スロットは通常50枚が上限だが、家スロなら9999とかでもいい）
+    //if (credits > 99) credits = 99; // 一応カンスト設定
+
+    updatePanel(); // 画面の数字を更新
+
+    isBusy = false;
+
+    //setTimeout(() => {
+    //    isBusy = false; // ★ロック解除！次のレバーオンOK
+    //    console.log("Next game ready.");
+    //}, 400); // 400msくらい待たせると「実機っぽい重み」が出る
+    // 
+}*/
+
+function decideStop(result) {
+    const pattern = stopPatterns[result];
+
+    // 全リール（0:左, 1:中, 2:右）に対してループ処理
+    let stops = [0, 0, 0];
+    for (let r = 0; r < 3; r++) {
+        let targetPositions;
+        
+        // パターンが "ANY" の場合、禁止位置を除外して抽選する
+        if ((r === 0 && pattern.left === "ANY") || 
+            (r === 1 && pattern.center === "ANY") || 
+            (r === 2 && pattern.right === "ANY")) {
+            
+            // 1. このリール(r)における「禁止インデックス」を全て集める
+            let forbiddenIndices = new Set();
+            forbiddenKeys.forEach(key => {
+                let p = stopPatterns[key];
+                let indices = (r === 0) ? p.left : (r === 1) ? p.center : p.right;
+                
+                if (Array.isArray(indices)) {
+                    indices.forEach(idx => forbiddenIndices.add(idx));
+                }
+            });
+
+            // 2. 0～20の中で、禁止されていない「安全なインデックス」を抽出
+            let safeIndices = [];
+            for (let i = 0; i < reelLength; i++) {
+                if (!forbiddenIndices.has(i)) {
+                    safeIndices.push(i);
+                }
+            }
+
+            // 安全な場所が一つもない場合は、仕方ないのでcurrentIndex（現在の位置）にするなどの保険
+            if (safeIndices.length === 0) {
+                console.warn(`リール${r+1}: 停止可能な位置がありません。設定を見直してください。`);
+                stops[r] = currentIndex[r]; 
+            } else {
+                // 3. 安全なリストからランダムに選ぶ
+                stops[r] = safeIndices[Math.floor(Math.random() * safeIndices.length)];
+            }
+
+        } else {
+            // "ANY" じゃない場合は、指定された配列から選ぶ（既存のロジック）
+            let arr = (r === 0) ? pattern.left : (r === 1) ? pattern.center : pattern.right;
+            stops[r] = Array.isArray(arr) ? arr[Math.floor(Math.random() * arr.length)] : currentIndex[r];
+        }
+    }
+
+    return stops;
+}
+
+function shuffle(array) {
+            for (let i = array.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1)); // 0〜i のどれか
+                [array[i], array[j]] = [array[j], array[i]];   // 要素を交換
+            }
+            return array;
+        }
+
+let correctOrder = []; // 今回の正解の押し順 (例: [0, 1, 2])
+let playerOrder = [];  // プレイヤーが実際に押した順
+
+function startReels() {
+
+    if (isBusy) return;
+
+    if (!spiningLReel && !spiningCReel && !spiningRReel) {
+        // ★ここに追加：ペナルティフラグをリセット
+        document.getElementById('warning-overlay').style.display = 'none';
+        isPenalty = false;
+        // メダルを消費
+        credits -= 3;
+        payout = 0; // 払い出し表示をリセット
+        updatePanel(); // 画面更新
+
+        playerOrder = [];
+        correctOrder = [];
+        hideNavi(); // ナビを隠す関数（後で作る）
+
+        picupRandInt();
+        spiningLReel = true;
+        spiningCReel = true;
+        spiningRReel = true;
+        for (let r = 0; r < 3; r++) {
+            // ★追加：回転クラスをつける
+            document.getElementById(`reel${r+1}`).classList.add('spinning');
+            reelTimers[r] = setInterval(() => {
+                const reel = document.getElementById(`reel${r+1}`);
+                reel.innerHTML = '';
+                for (let i = 3; i > 0; i--) {
+                const symbolIndex = (currentIndex[r] + i) % reelLength;
+                const img = document.createElement('img');
+                img.src = reels[r][symbolIndex];
+                img.className = 'symbol';
+                reel.appendChild(img);
+                }
+                currentIndex[r] = (currentIndex[r] + 1) % reelLength;
+            }, frameInterval);
+        }
+    }
+}
+
+function hideNavi() {
+    for(let i=0; i<3; i++) {
+        document.getElementById(`navi-${i}`).style.display = 'none';
+    }
+}
+
+function renderReel(reelIndex) {
+    const reel = document.getElementById(`reel${reelIndex+1}`);
+    reel.innerHTML = '';
+    for (let i = 0; i < 3; i++) {
+        const symbolIndex = (currentIndex[reelIndex] + i) % reelLength;
+        const img = document.createElement('img');
+        img.src = reels[reelIndex][symbolIndex];
+        img.className = 'symbol';
+        reel.appendChild(img);
+    }
+}
+
+
+function stopReel(reelIndex, tgtIndex) {
+    // 1. 他のリールを停止処理中なら、この呼び出しは完全に無視する
+    if (isStopping) return;
+
+    // 2. 指定されたリールが「既に止まっている」なら、何もせずに関数を終わる
+    if (reelIndex === 0 && !spiningLReel) return;
+    if (reelIndex === 1 && !spiningCReel) return;
+    if (reelIndex === 2 && !spiningRReel) return;
+
+    // 3. 停止処理を開始するのでロックをかける
+    isStopping = true;
+
+    // 通常時第一停止が左以外ならペナルティ確定
+    if (!isAT && playerOrder.length === 0 && reelIndex !== 0) {
+        isPenalty = true;
+        console.log("ペナルティ！左以外から押されました");
+    }
+
+    // --- 停止メイン処理 ---
+    if(reelIndex == 0 && spiningLReel) {
+        playerOrder.push(reelIndex);
+        document.getElementById(`reel${reelIndex+1}`).classList.remove('spinning');
+        clearInterval(reelTimers[reelIndex]);
+        currentIndex[reelIndex] = tgtIndex[reelIndex];
+        renderReel(reelIndex);
+        spiningLReel = false;
+    }
+    else if(reelIndex == 1 && spiningCReel) { // else if にすることで確実に1つずつ判定
+        document.getElementById(`reel${reelIndex+1}`).classList.remove('spinning');
+        playerOrder.push(reelIndex);
+        clearInterval(reelTimers[reelIndex]);
+        currentIndex[reelIndex] = tgtIndex[reelIndex];
+        renderReel(reelIndex);
+        spiningCReel = false;
+    }
+    else if(reelIndex == 2 && spiningRReel) {
+        document.getElementById(`reel${reelIndex+1}`).classList.remove('spinning');
+        playerOrder.push(reelIndex);
+        clearInterval(reelTimers[reelIndex]);
+        currentIndex[reelIndex] = tgtIndex[reelIndex];
+        renderReel(reelIndex);
+        spiningRReel = false;
+    }
+
+    // キーボードの指が離れた瞬間に実行される
+    window.addEventListener('keyup', (event) => {
+    const key = event.key;
+    // 停止に使うキー（左・下・右矢印など）が離されたらロック解除
+    if (key === 'ArrowLeft' || key === 'ArrowDown' || key === 'ArrowRight') {
+        isStopping = false; 
+        //console.log("ボタンが離されたのでロックを解除しました");
+    }
+});
+
+    // ■ 全てのリールが止まったかチェック
+    if (!spiningLReel && !spiningCReel && !spiningRReel) {
+        isBusy = true;
+        setTimeout(checkPayout, 200); 
+    }
+}
+
+function loadWindow() {
+//ここでやっている事は、通常時(CZ)時の抽選テーブルと、AT時の抽選テーブルの生成。
+//合計が65536にしたいが
+    currentState = GAME_STATE.NORMAL
+    let excfor = [[48338,8296,6241,964,668,452,240,171,126,40],//65536
+                ["一枚役","リプレイ","ベル","弱チェ","チャンス","スイカ弱","スイカ強","強チェ","強イチゴ","中チェ"]];
+
+                for(let i = 0; i < excfor[0].length; i++) {
+                    for(let j = 0; j < excfor[0][i]; j++) {
+                        Normal_lottery.push(excfor[1][i]);
+                    }
+                }
+                Normal_lottery = shuffle(Normal_lottery);
+                console.log(Normal_lottery);//278
+    let excfor2 = [[25633,28400,8296,273,273,964,668,452,240,171,126,40],//Sum65536
+                   ["一枚役","押し順ベル","リプレイ","G数増加-弱","G数増加-強","弱チェ","チャンス","スイカ弱","スイカ強","強チェ","強イチゴ","中チェ"]];
+
+                    for(let i = 0; i < excfor2[0].length ; i++) {
+                        for(let j = 0 ;j < excfor2[0][i]; j++) {
+                            AT_lottery.push(excfor2[1][i]);
+                        }
+                    }
+                    AT_lottery = shuffle(AT_lottery);
+                    console.log(AT_lottery);
+                    console.log("現在の設定：" + currentSetting);
+}
+
+window.onload = function() {
+    loadWindow();
+    updatePanel();
+}
+
+// ■ キーボード操作のイベントリスナー
+document.addEventListener('keydown', function(event) {
+    
+    // 連打防止や、変な挙動を防ぐための基本チェック
+    // ※もしtgtIndexが未定義（まだ回してない）の時に止めようとするとエラーになるのを防ぐ
+    
+    switch(event.key) {
+        // --- レバーオン (Qキー) ---
+        case 'q':
+        case 'Q':
+            // 既に回っている時は反応させない等の制御は startReels 内にあるはずだが念のため
+            startReels();
+            break;
+
+        // --- 左停止 (←キー) ---
+        case 'ArrowLeft':
+            // tgtIndexが存在するか（回っているか）チェック
+            if (typeof tgtIndex !== 'undefined') {
+                stopReel(0, tgtIndex);
+            }
+            break;
+
+        // --- 中停止 (↓キー) ---
+        case 'ArrowDown':
+            // パチスロの真ん中ボタンは配置的に「↓」がしっくり来るよな
+            if (typeof tgtIndex !== 'undefined') {
+                stopReel(1, tgtIndex);
+            }
+            // 画面スクロールを防ぐ
+            event.preventDefault(); 
+            break;
+
+        // --- 右停止 (→キー) ---
+        case 'ArrowRight':
+            if (typeof tgtIndex !== 'undefined') {
+                stopReel(2, tgtIndex);
+            }
+            break;
+
+
+            // --- デバッグ用コマンド (数字キー) ---
+        case '1':
+            debugForcedRole = "リプレイ";
+            console.log("【デバッグ】次ゲーム: リプレイ");
+            break;
+        case '2':
+            debugForcedRole = "ベル"; // または "押し順ベル"
+            console.log("【デバッグ】次ゲーム: ベル");
+            break;
+        case '3':
+            debugForcedRole = "弱チェ";
+            console.log("【デバッグ】次ゲーム: 弱チェリー");
+            break;
+        case '4':
+            debugForcedRole = "強チェ";
+            console.log("【デバッグ】次ゲーム: 強チェリー");
+            break;
+        case '5':
+            debugForcedRole = "チャンス";
+            console.log("【デバッグ】次ゲーム: チャンス目");
+            break;
+        case '6':
+            debugForcedRole = "スイカ強";
+            console.log("【デバッグ】次ゲーム: スイカ(強)");
+            break;
+        case '7':
+            debugForcedRole = "強イチゴ";
+            console.log("【デバッグ】次ゲーム: 強イチゴ (激熱)");
+            break;
+        case '8':
+            debugForcedRole = "G数増加-弱";
+            console.log("【デバッグ】次ゲーム: G数増加-弱");
+            break;
+        case '9':
+            debugForcedRole = "中チェ";
+            console.log("【デバッグ】次ゲーム: 中段チェリー (フリーズ確認用)");
+            break;
+        case '0':
+            debugForcedRole = "G数増加-強"; // ハズレの代わりなど
+            console.log("【デバッグ】次ゲーム: G数増加-強");
+            break;
+    }
+});
+
+    </script>
+</body>
+</html>
