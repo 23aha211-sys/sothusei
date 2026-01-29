@@ -24,6 +24,11 @@
         </div>
     </div>
     
+    <div class="counter-box" style="width: 60px;">
+    <span class="label">WAIT</span>
+    <div id="wait-lamp" class="lamp-off">●</div>
+</div>
+    
     <div class="reel-container">
         <div id="warning-overlay" style="display: none;">
             ⚠ 左押し推奨 ⚠
@@ -133,6 +138,10 @@ const frameInterval = rotationTime / reelLength; // ≈ 35.7msで1コマ進む
 
 let currentIndex = [17,16,15];
 let reelTimers = [];
+
+let lastGameStartTime = 0; // 前回のゲーム開始時刻
+const MIN_WAIT_TIME = 4100; // ウェイト時間 (ミリ秒) = 4.1秒
+let isWaiting = false; // ウェイト中かどうかのフラグ
 
 // ■ 現在の設定 (1, 2, 3, 4, 5, 6, "L")
 let currentSetting = Math.floor(Math.random() * 3) + 2;; 
@@ -610,6 +619,51 @@ function checkStateTransition() {
     }
 
     updateStateDisplay();
+}
+
+// ウェイトを考慮して回転を試みる関数
+function attemptSpin() {
+    // すでに回っている、またはウェイト処理中なら無視
+    if (isStopping || isWaiting) return;
+
+    const now = Date.now();
+    const timeSinceLastStart = now - lastGameStartTime; // 前回の開始から何ミリ秒経ったか
+
+    if (timeSinceLastStart < MIN_WAIT_TIME) {
+        // --- ウェイト発生！ ---
+        const waitDuration = MIN_WAIT_TIME - timeSinceLastStart; // 残り待ち時間
+        
+        console.log(`ウェイト作動: 残り ${waitDuration}ms 待ちます`);
+        isWaiting = true;
+        toggleWaitLamp(true); // ランプ点灯
+
+        // 残り時間だけ待ってから回転開始
+        setTimeout(() => {
+            isWaiting = false;
+            toggleWaitLamp(false); // ランプ消灯
+            startGameLogic(); // 実際の回転処理へ
+        }, waitDuration);
+
+    } else {
+        // --- ウェイトなし（4.1秒以上経過している） ---
+        startGameLogic();
+    }
+}
+
+// ランプの見た目を変える関数
+function toggleWaitLamp(isOn) {
+    const lamp = document.getElementById('wait-lamp');
+    if (isOn) {
+        lamp.className = "lamp-on";
+    } else {
+        lamp.className = "lamp-off";
+    }
+}
+
+// 実際の回転開始処理（既存の srartReel の中身の最初で時刻更新をする）
+function startGameLogic() {
+    lastGameStartTime = Date.now(); // ★ここで「今回の開始時刻」を記録
+    startReels(); // 既存の回転関数を実行
 }
 
 // ■ フリーズ演出（中段チェリーなど）
@@ -1194,7 +1248,8 @@ document.addEventListener('keydown', function(event) {
         case 'q':
         case 'Q':
             // 既に回っている時は反応させない等の制御は startReels 内にあるはずだが念のため
-            startReels();
+            attemptSpin();
+            //startReels();
             break;
 
         // --- 左停止 (←キー) ---
