@@ -132,3 +132,20 @@
 .reel-container {
     position: relative;
 }
+
+/* ランプの共通スタイル */
+.lamp-off {
+    width: 20px;
+    height: 20px;
+    background-color: #333; /* 消灯時は暗いグレー */
+    border-radius: 50%;
+    margin: 5px auto;
+    border: 2px solid #555;
+}
+
+/* 点灯時のスタイル */
+.lamp-on {
+    background-color: #ffdf00; /* 黄色く光る */
+    box-shadow: 0 0 10px #ffdf00, inset 0 0 5px #fff; /* 発光表現 */
+    border-color: #fff;
+}
