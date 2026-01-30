@@ -620,11 +620,16 @@ function checkStateTransition() {
 
     updateStateDisplay();
 }
+/*
+spiningLReel = true;
+        spiningCReel = true;
+        spiningRReel = true;
+*/
 
 // ウェイトを考慮して回転を試みる関数
 function attemptSpin() {
     // すでに回っている、またはウェイト処理中なら無視
-    if (isStopping || isWaiting) return;
+    if (isStopping || isWaiting || spiningLReel || spiningCReel || spiningRReel) return;
 
     const now = Date.now();
     const timeSinceLastStart = now - lastGameStartTime; // 前回の開始から何ミリ秒経ったか
