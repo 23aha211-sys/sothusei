@@ -4,7 +4,7 @@
 
 }
 body{
-    background-image: url(../画像/背景.png);
+    background-image: url(../画像/背景２.png);
     background-repeat: no-repeat;
     background-size: cover;
     display: flex;
@@ -31,4 +31,5 @@ button{
     appearance: none;
     color: white;
     font-weight: 600;
+
 }
