@@ -1,0 +1,29 @@
+
+            .reel_space{
+                display: flex;
+                justify-content: space-between;
+                right: 102px;
+                bottom: 355px;
+                width: 309px;
+                height: 150px;
+                background-color: blue;
+                color: white;
+                text-align: center;
+                border-radius: 5px;
+                position: absolute;
+                
+            }
+            .reel{
+                display: flex;
+                flex-direction: column;
+                justify-content: center;
+                width: 103px;
+                height: 123px;
+                text-align: center;
+                background-color: lightgreen;
+                color: black;
+                border-radius: 0px;
+                
+            }
+            
+            

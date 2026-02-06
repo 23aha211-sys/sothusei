@@ -1,0 +1,40 @@
+body{
+    background-image: url(../画像/背景.png);
+    background-repeat: no-repeat;
+    background-size: cover;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+    align-items: center;
+    min-height: 50vh;
+    padding-bottom: 40px;
+}
+button{
+    background-image: url(../画像/ボタン.png);
+    background-repeat: no-repeat;
+    background-position: center;
+    background-size: contain;   /* 画像を切らずに収める → 必要なら cover に変更 */
+    width: 100px;
+    height: 60px;
+    padding: 0;
+    border: none;
+    background-color: transparent;
+    cursor: pointer;
+    display: inline-block;
+    line-height: 0;             /* テキストがあれば重なりを防ぐ */
+    -webkit-appearance: none;
+    appearance: none;
+    color: white;
+    font-weight: 600;
+    position: relative;
+}
+
+h1{
+    position: relative;
+    top: -200px;
+    color: gold;
+}
+p{
+    color: gold;
+    font-size: 20px;
+}

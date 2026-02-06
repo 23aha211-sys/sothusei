@@ -1,0 +1,80 @@
+<html lang="ja">
+    <head>
+        <meta charset="UTF-8">
+        <link rel="stylesheet" href="../CSS/StyleSheet_Cabinet.css">
+        <link rel="stylesheet" href="../CSS/StyleSheet_Screen.css">
+        <link rel="stylesheet" href="../CSS/StyleSheet_Reel.css">
+        <link rel="stylesheet" href="../CSS/StyleSheet_Button.css">
+        <link rel="stylesheet" href="../CSS/StyleSheet_Panel.css">
+        <link rel="stylesheet" href="../CSS/StyleSheet_Score.css">
+        
+    </head>
+    <body>
+        <div class="parrent">
+            <div class="Cabinet">筐体イメージ
+                <div class="screen">
+                    <img id="screenImg" src="../画像/棒人間/棒人間_1.png" alt="画面だよ" width="460px" height="150px">
+                </div>
+                <div class="reel_space">
+                    <div class="reel">
+                        <img id="reel_picture_left1" src="../画像/仮画像赤丸.png" alt="動くよ" width="102px" height="40px">
+                        <img id="reel_picture_left2" src="../画像/仮画像青四角.png" alt="動くよ" width="102px" height="40px">
+                        <img id="reel_picture_left3" src="../画像/仮画像黄三角.png" alt="動くよ" width="102px" height="40px">
+                    </div>
+                    <div class="reel" >
+                        <img id="reel_picture_center1" src="../画像/仮画像赤丸.png" alt="動くよ" width="102px" height="40px">
+                        <img id="reel_picture_center2" src="../画像/仮画像青四角.png" alt="動くよ" width="102px" height="40px">
+                        <img id="reel_picture_center3" src="../画像/仮画像黄三角.png" alt="動くよ" width="102px" height="40px">
+                    </div>
+                    <div class="reel" >
+                        <img id="reel_picture_right1" src="../画像/仮画像赤丸.png" alt="動くよ" width="102px" height="40px">
+                        <img id="reel_picture_right2" src="../画像/仮画像青四角.png" alt="動くよ" width="102px" height="40px">
+                        <img id="reel_picture_right3" src="../画像/仮画像黄三角.png" alt="動くよ" width="102px" height="40px">
+                    </div>
+                </div>
+                <div class="button_space">
+                    <!--スタートボタン-->
+                    <button class="startButton" id="startButton">スタート</button>
+                    <div class="button_zone">
+                        <!--各停止ボタン-->
+                            <div><button id="left_reel_button" class="reel_button">左</button></div>
+                            <div><button id="center_reel_button" class="reel_button">中</button></div>
+                            <div><button id="right_reel_button" class="reel_button">右</button></div>
+                    </div>
+                    
+                </div>
+                <div class="under_panel">
+                    <img src="../画像/子犬.png" alt="犬だよ" width="512px" height="306px">
+                </div>
+            </div>
+
+            <div class="score_panel">スコア台
+                <div id="score">0</div>
+                <button onclick="changeNumber(120)" class="score_Button" id="score_Button_120">+120</button>
+                <button onclick="changeNumber(240)" class="score_Button"  id="score_Button_240">+240</button>
+                <button onclick="changeNumber(300)" class="score_Button"  id="score_Button_300">+300</button>
+            </div>
+        </div>
+        <button onclick="location.href='../html/タイトル.html'">タイトルへ</button>
+        <script src="../JavaScript/ゲーム画面/script.js"></script>
+        <script src="../JavaScript/ゲーム画面/script_button.js"></script>
+        <script src="../JavaScript/ゲーム画面/script_screen.js"></script>
+        <!--左リール↓-->
+        <script src="../JavaScript/ゲーム画面/script_reel_left.js"></script>
+        <script src="../JavaScript/ゲーム画面/script_reel_left2.js"></script>
+        <script src="../JavaScript/ゲーム画面/script_reel_left3.js"></script>
+        <!--中リール↓-->
+        <script src="../JavaScript/ゲーム画面/script_reel_center.js"></script>
+        <script src="../JavaScript/ゲーム画面/script_reel_center2.js"></script>
+        <script src="../JavaScript/ゲーム画面/script_reel_center3.js"></script>
+        <!--右リール↓-->
+        <script src="../JavaScript/ゲーム画面/script_reel_right.js"></script>
+        <script src="../JavaScript/ゲーム画面/script_reel_right2.js"></script>
+        <script src="../JavaScript/ゲーム画面/script_reel_right3.js"></script>
+        <script src="../JavaScript/ゲーム画面/script_check.js"></script>
+        <footer>
+            <p>a320dobasi</p>
+        </footer>
+    </body>
+    
+</html>

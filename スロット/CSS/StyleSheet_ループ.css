@@ -1,0 +1,9 @@
+
+.chlildren{
+    display: flex;
+    flex-direction: column;
+}
+
+.parents{
+    display: flex;
+}
