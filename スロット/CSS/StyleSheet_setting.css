@@ -1,6 +1,6 @@
 
 body{
-    background-image: url(../画像/背景.png);
+    background-image: url(../画像/背景２.png);
     background-repeat: no-repeat;
     background-size: cover;
     display: flex;
@@ -37,4 +37,5 @@ h1{
 }
 p{
     color: gold;
+
 }
