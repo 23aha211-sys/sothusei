@@ -1422,11 +1422,22 @@ document.addEventListener('keydown', function(event) {
         case '0':
             debugForcedRole = "G数増加-強"; // ハズレの代わりなど
             console.log("【デバッグ】次ゲーム: G数増加-強");
+            credits = credits+100;
+            updatePanel();
+            console.log("仮");
+            Swal.fire({
+                title: 'クレジットを100追加しました。',
+                text: 'クレジットを100追加しました。',
+                timer: 700,
+                timerProgressBar: true,
+                showConfirmButton: false, // OKボタンを非表示にする
+                icon:'success'
+             });
             break;
         case 'KeyY':
             credits = credits+100;
             updatePanel();
-            console.log('仮');
+            console.log("仮");
             Swal.fire({
                 title: 'クレジットを100追加しました。',
                 text: 'クレジットを100追加しました。',
@@ -1443,6 +1454,7 @@ document.addEventListener('keydown', function(event) {
 </body>
 
 </html>
+
 
 
 
