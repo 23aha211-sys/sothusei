@@ -1425,8 +1425,25 @@ document.addEventListener('keydown', function(event) {
             break;
     }
 });
-
+        //↓credit追加枠
+        document.addEventListener('keydown',e =>{
+            switch(e.key){
+                case '1':
+                    credits = credits+100;
+                    updatePanel();
+                    Swal.fire({
+                        title: 'クレジットを100追加しました。',
+                        text: 'クレジットを100追加しました。',
+                        timer: 700,
+                        timerProgressBar: true,
+                        showConfirmButton: false, // OKボタンを非表示にする
+                        icon:'success'
+                    });
+                    break;
+            }
+        })
     </script>
 </body>
 
 </html>
+
