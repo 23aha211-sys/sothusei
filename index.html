@@ -66,14 +66,14 @@
     </div>
 
     <div class="button-container">
-        <div class="stop-btn btn-red" id="btn-0" onclick="stopReel(0)">1</div>
-        <div class="stop-btn btn-red" id="btn-1" onclick="stopReel(1)">2</div>
-        <div class="stop-btn btn-red" id="btn-2" onclick="stopReel(2)">3</div>
+        <div class="stop-btn btn-red" id="btn-0" onclick="stopReel(0, tgtIndex)">1</div>
+        <div class="stop-btn btn-red" id="btn-1" onclick="stopReel(1, tgtIndex)">2</div>
+        <div class="stop-btn btn-red" id="btn-2" onclick="stopReel(2, tgtIndex)">3</div>
     </div>
     
     </div>
 
-    <p>Q:レバーオン　←：左リール　↓：中リール　→：右リール</p>
+    <!--<p>Q:レバーオン　←：左リール　↓：中リール　→：右リール</p>-->
 
 
 
@@ -162,7 +162,7 @@ const MIN_WAIT_TIME = 4100; // ウェイト時間 (ミリ秒) = 4.1秒
 let isWaiting = false; // ウェイト中かどうかのフラグ
 
 // ■ 現在の設定 (1, 2, 3, 4, 5, 6, "L")
-let currentSetting = Math.floor(Math.random() * 3) + 2;; 
+let currentSetting = Math.floor(Math.random() * 6) + 1;; 
 
 // ■ 設定別・当選確率テーブル (2026/01/16仕様書準拠)
 // ※確率は「当選確率(%)」
@@ -283,7 +283,7 @@ const payoutMap = {
 // ■ 設定：CZ中のボーナス当選確率 (%)
 // ※PDFのスペックに合わせて調整してくれ
 const CZ_CONFIG = {
-    GAMES: 15, // CZの継続ゲーム数
+    GAMES: 10, // CZの継続ゲーム数
     
     // 小役ごとの解除期待度
     HIT_RATES: {
@@ -416,7 +416,7 @@ function startHyperAT() {
         hyperStock++;
     }
     
-    console.log(`上位AT突入！ 獲得ストック数: ${hyperStock}`);
+//     console.log(`上位AT突入！ 獲得ストック数: ${hyperStock}`);
     alert(`上位AT「すとぷりHYPER」突入！\n(期待度約80%ループ)`);
     
     updateStateDisplay();
@@ -436,8 +436,8 @@ async function startNormalAT(initialG) {
 async function enterCZ() {
     cz_enter.currentTime = 0;
     cz_enter.play();
-    await waitSeconds(3);
-    alert("チャンスゾーン突入！ 15G以内にボーナスを掴め！");
+    //await waitSeconds(3);
+    alert("チャンスゾーン突入！ 10G以内にボーナスを掴め！");
     currentState = GAME_STATE.CZ;
     czRemainingGames = CZ_CONFIG.GAMES;
 
@@ -490,7 +490,7 @@ function checkStateTransition() {
     // --- 3. ★ここが重要：ラストチャレンジの進行処理 ---
     else if (currentState === GAME_STATE.LAST_CHALLENGE) {
         lastChallengeG++; // ゲーム数を進める
-        console.log(`ラストチャレンジ消化: ${lastChallengeG}/5`);
+//         console.log(`ラストチャレンジ消化: ${lastChallengeG}/5`);
 
         let isSuccess = false;
 
@@ -501,7 +501,7 @@ function checkStateTransition() {
         // ※PDF仕様: 「5Gの間にレア役を引く or 大当たりを引いたらAT」
         if (["強チェ", "チャンス", "スイカ強", "強イチゴ", "中チェ"].includes(currentHitRole)) {
             isSuccess = true;
-            console.log("レア役でねじ込んだ！");
+//             console.log("レア役でねじ込んだ！");
         }
 
         if (isSuccess) {
@@ -553,7 +553,7 @@ function checkStateTransition() {
                 
                 // 演出: 終わったと見せかけて…？
                 alert("まだまだぁ！！\nHYPER LOOP発動！ (残りストックあり)");
-                console.log(`HYPER継続！ 残りストック: ${hyperStock}`);
+//                 console.log(`HYPER継続！ 残りストック: ${hyperStock}`);
                 updateStateDisplay();
                 return; // ここで処理を終えて、ジャッジへは行かせない
             }
@@ -596,7 +596,7 @@ function checkStateTransition() {
             // 上位AT中なら継続確定＝上位ループ
             if (currentState === GAME_STATE.AT_HYPER) isHyper = true; 
             hasAtStock = false; // ストック消費
-            console.log("ストック放出！");
+//             console.log("ストック放出！");
             isAT = true;
         } 
         // 自力抽選 (レア役 or 1/6)
@@ -632,7 +632,7 @@ function checkStateTransition() {
             } else {
                 pullBackGames = 66; // 通常後は66G
             }
-            console.log("引き戻し区間突入：" + pullBackGames);
+//             console.log("引き戻し区間突入：" + pullBackGames);
             currentState = GAME_STATE.PULL_BACK;
             isAT = false;
             // 引き戻し区間(66G)などはここに実装するが、まずは通常へ戻す
@@ -643,7 +643,7 @@ function checkStateTransition() {
 
         // 1/32.0 の引き戻し抽選 
         if (Math.random() * 100 < PULLBACK_WIN_RATE) {
-            console.log("🔥 引き戻し成功！ 🔥");
+//             console.log("🔥 引き戻し成功！ 🔥");
             strstrawberry.currentTime = 0;
             strstrawberry.play();
             startBonus(true); // AT復帰
@@ -653,7 +653,7 @@ function checkStateTransition() {
 
         // 規定ゲーム数消化で通常へ
         if (pullBackGames <= 0) {
-            console.log("引き戻し失敗。通常へ戻ります");
+//             console.log("引き戻し失敗。通常へ戻ります");
             currentState = GAME_STATE.NORMAL;
             isUpperAT = false;
         }
@@ -679,7 +679,7 @@ function attemptSpin() {
         // --- ウェイト発生！ ---
         const waitDuration = MIN_WAIT_TIME - timeSinceLastStart; // 残り待ち時間
         
-        console.log(`ウェイト作動: 残り ${waitDuration}ms 待ちます`);
+//         console.log(`ウェイト作動: 残り ${waitDuration}ms 待ちます`);
         isWaiting = true;
         toggleWaitLamp(true); // ランプ点灯
 
@@ -744,7 +744,7 @@ function startBonus(isForcedBig = false) {
     let isBig = isForcedBig ? true : (Math.random() < 0.4);
 
     if (currentSetting === "L") {
-        console.log("設定Lのため、BIGを強制的にREGへ変更");
+//         console.log("設定Lのため、BIGを強制的にREGへ変更");
         isBig = false;
     }
     
@@ -777,7 +777,7 @@ function picupRandInt() {
     // ■■■ デバッグ強制モード ■■■
     if (debugForcedRole !== null) {
         currentHitRole = debugForcedRole;
-        console.log(`★神の力発動！強制フラグ: ${currentHitRole}`);
+//         console.log(`★神の力発動！強制フラグ: ${currentHitRole}`);
         
         if(currentHitRole === "強イチゴ" || currentHitRole === "強チェ" || currentHitRole === "スイカ強"){
             strstrawberry.currentTime = 0;
@@ -789,7 +789,7 @@ function picupRandInt() {
         if (currentHitRole === "押し順ベル") {
              // orderPatterns がちゃんとあるか確認
              if (typeof orderPatterns === 'undefined') {
-                 console.error("【エラー】orderPatterns が定義されてないぞ！コードの一番上に書いたか確認しろ！");
+//                  console.error("【エラー】orderPatterns が定義されてないぞ！コードの一番上に書いたか確認しろ！");
                  return;
              }
 
@@ -814,11 +814,11 @@ function picupRandInt() {
     let piced = rondom;
     if(!isAT){
         currentHitRole = Normal_lottery[piced]; // ★保存
-        console.log(piced + "," + Normal_lottery[piced]);
+//         console.log(piced + "," + Normal_lottery[piced]);
         tgtIndex = decideStop(Normal_lottery[piced]);
     }else {
         currentHitRole = AT_lottery[piced];     // ★保存
-        console.log(piced + "," + AT_lottery[piced]);
+//         console.log(piced + "," + AT_lottery[piced]);
         tgtIndex = decideStop(AT_lottery[piced]);
         if (currentHitRole === "押し順ベル") {
             // ランダムに正解パターンを選ぶ
@@ -827,7 +827,7 @@ function picupRandInt() {
             const randIndex = Math.floor(Math.random() * orderPatterns.length);
             correctOrder = orderPatterns[randIndex];
             
-            console.log("正解の押し順:", correctOrder);
+//             console.log("正解の押し順:", correctOrder);
 
             // ★AT中 または ボーナス中ならナビを出す（＝正解を教える）
             if (currentState === GAME_STATE.AT || 
@@ -850,7 +850,7 @@ function picupRandInt() {
         // クラスを付与してアニメーション開始
         container.classList.add('flash-mode');
         
-        console.log("⚡ 強役演出発生！ ⚡");
+//         console.log("⚡ 強役演出発生！ ⚡");
 
         // 0.5秒後にクラスを外す（これをしないと次は光らなくなる）
         setTimeout(() => {
@@ -883,6 +883,9 @@ function showNavi(order) {
 }
 
 const forbiddenKeys = ["リプレイ", "ベル", "弱チェ", "スイカ弱", "スイカ強", "強チェ", "強イチゴ", "中チェ"];
+let total_payout = 0;
+let total_bet = 0;
+let total_playGame = 0;
 
 async function checkPayout() {
     if (isPenalty) {
@@ -890,7 +893,7 @@ async function checkPayout() {
         const overlay = document.getElementById('warning-overlay');
         overlay.style.display = 'block'; // 表示オン
         
-        console.log("変則打ちのため抽選無効");
+//         console.log("変則打ちのため抽選無効");
         isBusy = false; 
         return;
         
@@ -922,7 +925,7 @@ async function checkPayout() {
             }
 
             // ログと演出
-            console.log(`${currentHitRole}！ +${addG}G`);
+//             console.log(`${currentHitRole}！ +${addG}G`);
             alert(`【上乗せ！】\n${currentHitRole} GET！\n+${addG}G (残り ${atGames}G)`);
 
             // 演出：強なら赤、弱ならシアン(青)
@@ -943,11 +946,11 @@ async function checkPayout() {
     // --- 押し順ベルの判定 ---
     if (currentHitRole === "押し順ベル") {
         if (JSON.stringify(playerOrder) === JSON.stringify(correctOrder)) {
-            console.log("押し順正解！");
+//             console.log("押し順正解！");
             pay = 15; // 正解
             // ここで「GOOD!」とか出すと気持ちいい
         } else {
-            console.log("押し順不正解...");
+//             console.log("押し順不正解...");
             pay = 1; // 失敗
         }
     }
@@ -958,7 +961,7 @@ async function checkPayout() {
         // 「ベル」または「押し順ベル(正解)」なら pay は 8 になっているはず
         if (pay >= 8) {
             regBellCount++;
-            console.log(`ベル入賞！ 現在: ${regBellCount}/7`);
+//             console.log(`ベル入賞！ 現在: ${regBellCount}/7`);
             
             // 規定回数到達チェック
             if (regBellCount >= 7) {
@@ -970,6 +973,8 @@ async function checkPayout() {
     }
 
     // --- 払い出し実行 ---
+    total_bet += 3
+    total_playGame += 1;
     if (pay === "REPLAY") {
         for(let i = 0; i < 3; i++) {
             credits += 1;
@@ -977,21 +982,22 @@ async function checkPayout() {
             await waitSeconds(0.05);
         }
         payout = 0; 
-        console.log("REPLAY");
+//         console.log("REPLAY");
     } else if(pay == 1 || pay === "一枚役"){
         credits += 1;
         payout += 1;
     }
     else {
-        dropcoin.currentTime = 0;
-        dropcoin.play();
+        /*dropcoin.currentTime = 0;
+        dropcoin.play();*/
         for(let i = 0; i < pay ; i++) {
             credits += 1;
             payout += 1;
+            total_payout += 1;
             updatePanel(); 
             await waitSeconds(0.05);
         }
-        console.log(pay + "枚払い出し");
+//         console.log(pay + "枚払い出し");
     }
 
     // 上限処理
@@ -999,6 +1005,8 @@ async function checkPayout() {
 
     updatePanel(); 
     checkStateTransition(); // 状態移行チェックへ（カウント処理は削除済み）
+    let kikaiwari = (total_payout/total_bet)*100;
+    console.log("ゲーム数：" + total_playGame + "\n投資枚数：" + total_bet + "\n合計払い出し枚数：" + total_payout + "\n機械割(%):" + kikaiwari);
 
     // ウェイト解除
     setTimeout(() => {
@@ -1014,13 +1022,13 @@ async function checkPayout() {
     if (currentHitRole === "押し順ベル") {
         // 配列の中身を比較（JSON.stringifyはお手軽比較テクニック）
         if (JSON.stringify(playerOrder) === JSON.stringify(correctOrder)) {
-            console.log("押し順正解！ベルGET！");
+//             console.log("押し順正解！ベルGET！");
             pay = 8; // 正解時の枚数（PDFなどの仕様に合わせる）
             
             // 演出：ナビを消す、または「GOOD!」とか出す
             
         } else {
-            console.log("押し順不正解……こぼし");
+//             console.log("押し順不正解……こぼし");
             pay = 1; // こぼし時の枚数（通常は1枚か0枚）
             
             // 重要なポイント：
@@ -1037,7 +1045,7 @@ async function checkPayout() {
         credits += 3;
         // リプレイランプがあれば点灯させるが、今回はPAYOUT表示は0にしておく
         payout = 0; 
-        console.log("REPLAY! 再遊技");
+//         console.log("REPLAY! 再遊技");
     } else {
         // 通常の払い出し
         //credits += pay;
@@ -1049,7 +1057,7 @@ async function checkPayout() {
             updatePanel();
             await waitSeconds(0.05);
         }
-        console.log(pay + "枚払い出し");
+//         console.log(pay + "枚払い出し");
     }
 
     // 状態移行チェック
@@ -1064,7 +1072,7 @@ async function checkPayout() {
 
     //setTimeout(() => {
     //    isBusy = false; // ★ロック解除！次のレバーオンOK
-    //    console.log("Next game ready.");
+//     //    console.log("Next game ready.");
     //}, 400); // 400msくらい待たせると「実機っぽい重み」が出る
     // 
 }*/
@@ -1103,7 +1111,7 @@ function decideStop(result) {
 
             // 安全な場所が一つもない場合は、仕方ないのでcurrentIndex（現在の位置）にするなどの保険
             if (safeIndices.length === 0) {
-                console.warn(`リール${r+1}: 停止可能な位置がありません。設定を見直してください。`);
+//                 console.warn(`リール${r+1}: 停止可能な位置がありません。設定を見直してください。`);
                 stops[r] = currentIndex[r]; 
             } else {
                 // 3. 安全なリストからランダムに選ぶ
@@ -1245,7 +1253,7 @@ function stopReel(reelIndex, tgtIndex) {
     
     // 回り始めてから 500ms 経っていない場合は、何もしない（return）
     if (currentTime - reelStartTime < STOP_LOCK_TIME || !spiningCReel && !spiningLReel && !spiningRReel) {
-        console.log("まだリールが安定していません！");
+//         console.log("まだリールが安定していません！");
         return;
     }
 
@@ -1260,7 +1268,7 @@ function stopReel(reelIndex, tgtIndex) {
     // 通常時第一停止が左以外ならペナルティ確定
     if (!isAT && playerOrder.length === 0 && reelIndex !== 0) {
         isPenalty = true;
-        console.log("ペナルティ！左以外から押されました");
+//         console.log("ペナルティ！左以外から押されました");
     }
 
     // --- 停止メイン処理 ---
@@ -1298,7 +1306,7 @@ function stopReel(reelIndex, tgtIndex) {
     // 停止に使うキー（左・下・右矢印など）が離されたらロック解除
     if (key === 'ArrowLeft' || key === 'ArrowDown' || key === 'ArrowRight') {
         isStopping = false; 
-        //console.log("ボタンが離されたのでロックを解除しました");
+//         //console.log("ボタンが離されたのでロックを解除しました");
     }
 });
 
@@ -1323,7 +1331,7 @@ function loadWindow() {
                     }
                 }
                 Normal_lottery = shuffle(Normal_lottery);
-                console.log(Normal_lottery);//278
+//                 console.log(Normal_lottery);//278
     let excfor2 = [[25633,28400,8296,273,273,964,668,452,240,171,126,40],//Sum65536
                    ["一枚役","押し順ベル","リプレイ","G数増加-弱","G数増加-強","弱チェ","チャンス","スイカ弱","スイカ強","強チェ","強イチゴ","中チェ"]];
 
@@ -1333,8 +1341,8 @@ function loadWindow() {
                         }
                     }
                     AT_lottery = shuffle(AT_lottery);
-                    console.log(AT_lottery);
-                    console.log("現在の設定：" + currentSetting);
+//                     console.log(AT_lottery);
+//                     console.log("現在の設定：" + currentSetting);
 }
 
 window.onload = function() {
@@ -1384,48 +1392,48 @@ document.addEventListener('keydown', function(event) {
 
 
             // --- デバッグ用コマンド (数字キー) ---
-        case '1':
+        /*case '1':
             debugForcedRole = "リプレイ";
-            console.log("【デバッグ】次ゲーム: リプレイ");
+//             console.log("【デバッグ】次ゲーム: リプレイ");
             break;
         case '2':
             debugForcedRole = "ベル"; // または "押し順ベル"
-            console.log("【デバッグ】次ゲーム: ベル");
+//             console.log("【デバッグ】次ゲーム: ベル");
             break;
         case '3':
             debugForcedRole = "弱チェ";
-            console.log("【デバッグ】次ゲーム: 弱チェリー");
+//             console.log("【デバッグ】次ゲーム: 弱チェリー");
             break;
         case '4':
             debugForcedRole = "強チェ";
-            console.log("【デバッグ】次ゲーム: 強チェリー");
+//             console.log("【デバッグ】次ゲーム: 強チェリー");
             break;
         case '5':
             debugForcedRole = "チャンス";
-            console.log("【デバッグ】次ゲーム: チャンス目");
+//             console.log("【デバッグ】次ゲーム: チャンス目");
             break;
         case '6':
             debugForcedRole = "スイカ強";
-            console.log("【デバッグ】次ゲーム: スイカ(強)");
+//             console.log("【デバッグ】次ゲーム: スイカ(強)");
             break;
         case '7':
             debugForcedRole = "強イチゴ";
-            console.log("【デバッグ】次ゲーム: 強イチゴ (激熱)");
+//             console.log("【デバッグ】次ゲーム: 強イチゴ (激熱)");
             break;
         case '8':
             debugForcedRole = "G数増加-弱";
-            console.log("【デバッグ】次ゲーム: G数増加-弱");
+//             console.log("【デバッグ】次ゲーム: G数増加-弱");
             break;
         case '9':
             debugForcedRole = "中チェ";
-            console.log("【デバッグ】次ゲーム: 中段チェリー (フリーズ確認用)");
+//             console.log("【デバッグ】次ゲーム: 中段チェリー (フリーズ確認用)");
             break;
         case '0':
             debugForcedRole = "G数増加-強"; // ハズレの代わりなど
-            console.log("【デバッグ】次ゲーム: G数増加-強");
+//             console.log("【デバッグ】次ゲーム: G数増加-強");
             
             
-            break;
+            break;*/
         case 'y':
         case 'Y':
             credits = credits+100;
@@ -1446,7 +1454,6 @@ document.addEventListener('keydown', function(event) {
 </body>
 
 </html>
-
 
 
 
