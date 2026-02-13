@@ -113,8 +113,8 @@ const GAME_STATE = {
     BONUS_REG_WAIT: "REG_WAIT",
     LAST_CHALLENGE: "LAST_CHALLENGE",
     BONUS_BIG: "BIG",          // 初回BIG（AT確定）
-    AT: "AT_RUSH",             // 通常AT（すとぷりRUSH）
-    AT_HYPER: "AT_HYPER",      // 上位AT（すとぷりHYPER）
+    AT: "AT_RUSH",             // 通常AT（RUSH）
+    AT_HYPER: "AT_HYPER",      // 上位AT（HYPER RUSH）
     JUDGE_PREP: "JUDGE_PREP",  // 継続ジャッジ準備中（1枚役待ち）
     JUDGE_ACT: "JUDGE_ACT",     // 継続ジャッジ中（5G）
     PULL_BACK: "PULL_BACK"      //引き戻し区間
@@ -381,7 +381,7 @@ function updateStateDisplay() {
         } else {
             stateEl.style.color = "magenta";
             stateEl.style.textShadow = "none";
-            stateEl.textContent = "すとぷりRUSH";
+            stateEl.textContent = "RUSH";
         }
         subEl.textContent = `残りG数: ${atGames}G`;
     }
@@ -401,7 +401,7 @@ function updateStateDisplay() {
 
 // ■ 上位AT開始処理
 function startHyperAT() {
-    alert("上位AT「すとぷりHYPER」突入！");
+//     alert("上位AT「HYPER RUSH」突入！");
     currentState = GAME_STATE.AT_HYPER;
     atGames = 50; // 仕様：50Gスタート
     hyperStock = 0; // ストックリセット
@@ -417,7 +417,7 @@ function startHyperAT() {
     }
     
 //     console.log(`上位AT突入！ 獲得ストック数: ${hyperStock}`);
-    alert(`上位AT「すとぷりHYPER」突入！\n(期待度約80%ループ)`);
+//     alert(`上位AT「HYPER RUSH」突入！\n(期待度約80%ループ)`);
     
     updateStateDisplay();
 }
@@ -437,7 +437,7 @@ async function enterCZ() {
     cz_enter.currentTime = 0;
     cz_enter.play();
     //await waitSeconds(3);
-    alert("チャンスゾーン突入！ 10G以内にボーナスを掴め！");
+//     alert("チャンスゾーン突入！ 10G以内にボーナスを掴め！");
     currentState = GAME_STATE.CZ;
     czRemainingGames = CZ_CONFIG.GAMES;
 
@@ -505,7 +505,7 @@ function checkStateTransition() {
         }
 
         if (isSuccess) {
-            alert("ラストチャレンジ成功！！ すとぷりRUSH突入！");
+//             alert("ラストチャレンジ成功！！ RUSH突入！");
             // AT開始処理へ
             startNormalAT(20); 
             return;
@@ -513,7 +513,7 @@ function checkStateTransition() {
 
         // 失敗判定 (5G消化してダメだった場合)
         if (lastChallengeG >= 5) {
-            alert("ラストチャレンジ失敗…… 通常へ");
+//             alert("ラストチャレンジ失敗…… 通常へ");
             currentState = GAME_STATE.NORMAL;
             // 枠色とか変えてたら戻す処理もここに
         }
@@ -526,13 +526,13 @@ function checkStateTransition() {
         czRemainingGames--;
         let rate = CZ_CONFIG.HIT_RATES[currentHitRole] || 0;
         if (Math.random() * 100 < rate) {
-            alert("CZ成功！");
+//             alert("CZ成功！");
             document.querySelector('.panel-container').style.borderColor = "#555";
             startBonus();
             return;
         }
         if (czRemainingGames <= 0) {
-            alert("CZ失敗...");
+//             alert("CZ失敗...");
             currentState = GAME_STATE.NORMAL;
             document.querySelector('.panel-container').style.borderColor = "#555";
         }
@@ -552,14 +552,14 @@ function checkStateTransition() {
                 atGames = 20; // ゲーム数再セット
                 
                 // 演出: 終わったと見せかけて…？
-                alert("まだまだぁ！！\nHYPER LOOP発動！ (残りストックあり)");
+//                 alert("HYPER RUSH 継続");
 //                 console.log(`HYPER継続！ 残りストック: ${hyperStock}`);
                 updateStateDisplay();
                 return; // ここで処理を終えて、ジャッジへは行かせない
             }
 
             // ストックがない、または通常ATなら終了してジャッジへ
-            alert("AT終了……継続ジャッジへ");
+//             alert("AT終了……継続ジャッジへ");
             isAT = false;
             currentState = GAME_STATE.JUDGE_PREP;
             judgePrepCount = 0;
@@ -577,7 +577,7 @@ function checkStateTransition() {
         }
         
         if (judgePrepCount >= 2) {
-            alert("準備完了！継続ジャッジ開始(5G)！");
+//             alert("準備完了！継続ジャッジ開始(5G)！");
             currentState = GAME_STATE.JUDGE_ACT;
             judgeGames = 0;
         }
@@ -613,7 +613,7 @@ function checkStateTransition() {
                 startHyperAT();
             } else {
                 // 通常ATへ復帰（ゲーム数は振り分けだが今回は20G固定で）
-                alert("継続成功！RUSH復帰！");
+//                 alert("継続成功！RUSH復帰！");
                 isAT = true;
                 // もし元々上位ATだった場合はどうするか？
                 // 仕様の読み解きによるが、一般的に上位ループ漏れは通常ATに落ちるか終わるか。
@@ -626,7 +626,7 @@ function checkStateTransition() {
 
         // 5G駆け抜け失敗
         if (judgeGames >= 5) {
-            alert("ジャッジ失敗……通常へ");
+//             alert("ジャッジ失敗……通常へ");
             if (isUpperAT) {
                 pullBackGames = 72; // 上位後は72G
             } else {
@@ -729,7 +729,7 @@ async function performFreeze() {
         freezeBig.play()
         waitSeconds(6);
         
-        alert("降臨！ BIG BONUS確定！");
+//         alert("降臨！ BIG BONUS確定！");
         waitSeconds(6);
         isAT = true;
         startBonus(true); // BIG確定
@@ -750,12 +750,12 @@ function startBonus(isForcedBig = false) {
     
     if (isBig) {
         isAT = true;
-        if (!isForcedBig) alert("BIG BONUS！ すとぷりRUSH突入！");
+            if (!isForcedBig) alert("BIG BONUS！ RUSH突入！");
         // BIG処理（ATへ）
         startNormalAT(20); 
     } else {
         isAT = true;
-        alert("REG BONUS... ベルを7回集めろ！");
+//         alert("REG BONUS... ベルを7回集めろ！");
         currentState = GAME_STATE.BONUS_REG_WAIT;
         regBellCount = 0;
     }
@@ -926,7 +926,7 @@ async function checkPayout() {
 
             // ログと演出
 //             console.log(`${currentHitRole}！ +${addG}G`);
-            alert(`【上乗せ！】\n${currentHitRole} GET！\n+${addG}G (残り ${atGames}G)`);
+//             alert(`【上乗せ！】\n${currentHitRole} GET！\n+${addG}G (残り ${atGames}G)`);
 
             // 演出：強なら赤、弱ならシアン(青)
             let color = (currentHitRole === "G数増加-強") ? "red" : "cyan";
@@ -965,7 +965,7 @@ async function checkPayout() {
             
             // 規定回数到達チェック
             if (regBellCount >= 7) {
-                alert("ベル規定回数到達！ラストチャレンジ突入！");
+//                 alert("ベル規定回数到達！ラストチャレンジ突入！");
                 currentState = GAME_STATE.LAST_CHALLENGE;
                 lastChallengeG = 0;
             }
@@ -1168,7 +1168,6 @@ function updateLCD(state) {
         // 全リール停止時：元の画面に戻す（または結果表示）
         screen.innerHTML = `
             <div class="default-screen">
-                <p class="logo-text">testSlot</p>
             </div>
         `;
     }
@@ -1454,7 +1453,6 @@ document.addEventListener('keydown', function(event) {
 </body>
 
 </html>
-
 
 
 
